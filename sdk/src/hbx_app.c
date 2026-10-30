@@ -9,7 +9,14 @@
 /* Threaded launch                                                    */
 /* ------------------------------------------------------------------ */
 
-#if defined(__aarch64__) && !defined(HBX_TEST_NO_SLEEP)
+/* Console code paths: AArch64 *and* freestanding.  A hosted AArch64 build
+ * (Apple silicon or ARM Linux running the host tests) is a workstation, not
+ * the console. */
+#if defined(__aarch64__) && !__STDC_HOSTED__
+#define HBX_CONSOLE 1
+#endif
+
+#if defined(HBX_CONSOLE) && !defined(HBX_TEST_NO_SLEEP)
 /* The host launches an app with one short call to _spawn (crt0.S), which
  * lands here: create an nn::os thread that runs the image's ordinary entry,
  * then return at once.  When the entry returns, the thread publishes
@@ -51,7 +58,7 @@ int hbx_spawn(const struct hbx_spawn *p, const struct hbx_ctx *ctx) {
 /* Time                                                               */
 /* ------------------------------------------------------------------ */
 
-#if defined(__aarch64__)
+#if defined(HBX_CONSOLE)
 __attribute__((noinline)) uint64_t hbx_tick(void) {
 #ifdef HBX_TEST_NO_SLEEP
     /* qemu-aarch64 user mode has no Horizon firmware: a monotonic stand-in. */
