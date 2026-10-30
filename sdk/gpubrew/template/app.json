@@ -1,0 +1,15 @@
+{
+  "format": "hblauncher.gpu-app",
+  "abi": 1,
+  "id": "{{ID}}",
+  "name": "{{NAME}}",
+  "version": "1.0.0",
+  "description": "{{DESCRIPTION}}",
+  "icon": "icon.png",
+  "initialState": "assets/state.bin",
+  "shaders": {
+    "vertex": "build/app.vert.spv",
+    "fragment": "build/app.frag.spv",
+    "compute": "build/app.comp.spv"
+  }
+}

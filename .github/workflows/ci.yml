@@ -1,0 +1,36 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        toolchain: [gnu, llvm]
+    env:
+      SW2_TOOLCHAIN: ${{ matrix.toolchain }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 22}
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pil gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu \
+            clang lld llvm glslang-tools spirv-tools fonts-dejavu-core qemu-user \
+            libvulkan1 mesa-vulkan-drivers
+      - run: sh tools/build-all.sh
+      - run: sh tests/run.sh
+
+  macos:
+    # Workstation builds on Apple silicon: LLVM toolchain, no qemu, no lavapipe.
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 22}
+      - run: |
+          brew install llvm lld glslang spirv-tools
+          python3 -m pip install --break-system-packages Pillow
+      - run: ./sw2 doctor || true
+      - run: sh tools/build-all.sh
+      - run: sh tests/run.sh
+      - run: ./sw2 host-bundle --out sw2-sdk-host-macos.tar.gz

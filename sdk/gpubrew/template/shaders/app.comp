@@ -1,0 +1,15 @@
+#version 450
+#extension GL_GOOGLE_include_directive : require
+layout(local_size_x = 1) in;
+#include "gpubrew.glsl"
+
+// Game logic: one invocation per frame.  user2.xy holds the cursor.
+void main() {
+    if (gbFrame() == 0u) gb.user2.xy = GB_SCREEN * 0.5;
+    gb.user2.xy += gbStick(false) * vec2(12.0, -12.0);
+    if (gbTouchCount() > 0u) gb.user2.xy = gbTouch(0u);
+    gb.user2.xy = clamp(gb.user2.xy, vec2(0.0), GB_SCREEN);
+    gb.transition.x = max(0.0, gb.transition.x - 1.0 / 15.0);
+    if (gbConnected() && (gbPressed() & (GB_B | GB_MINUS)) != 0u) gbExit();
+    gbEndFrame();
+}

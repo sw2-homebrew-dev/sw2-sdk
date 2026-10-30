@@ -1,0 +1,38 @@
+# Generated output
+build/
+**/build/
+node_modules/
+__pycache__/
+*.py[cod]
+*.o
+*.elf
+*.a
+*.bin.tmp
+*.log
+tests/preview/out/
+release/
+
+# Local state and external checkouts
+.env
+.env.*
+!.env.example
+*.local.json
+run/
+saves/
+reference/
+
+# App payloads and user-supplied media
+apps/*/code.bin
+apps/*/data.bin
+apps/*/assets/
+*.nes
+*.z64
+*.nsp
+*.xci
+*.wad
+*.iso
+*.nds
+*.keys
+
+# Built in from the sw2-store repo by its install.sh
+apps/sw2-store/

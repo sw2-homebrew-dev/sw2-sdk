@@ -1,0 +1,8 @@
+#!/bin/sh
+# Resolve symlinks without GNU readlink -f (macOS before 12.3 lacks it).
+self=$0
+while [ -L "$self" ]; do
+  link=$(readlink "$self")
+  case $link in /*) self=$link ;; *) self=$(dirname "$self")/$link ;; esac
+done
+exec python3 "$(cd "$(dirname "$self")" && pwd)/tools/sw2.py" "$@"
