@@ -6,8 +6,9 @@
   sw2 build <app-dir> [...]          native (manifest.json) or GPUBrew (app.json)
   sw2 package <app-dir> [--out DIR] [--url-base URL] [--author A] [--category C]
                                      deterministic zip + sha256 + catalog entry
-  sw2 host-bundle [--out FILE]       built SDK for a host that does not compile
-                                     (e.g. macOS + mac2jb): launcher, runner, apps
+  sw2 host-bundle [--out FILE] [--version V]
+                                     prebuilt SDK tarball (+ .sha256): what releases
+                                     ship and what a host without a toolchain runs
   sw2 run [hbl-start args...]        start the launcher (e.g. --mock)
   sw2 store <list|install|remove|update|refresh> [id...]
                                      desktop store (the on-console store's fallback)
@@ -253,6 +254,9 @@ def cmd_host_bundle(args) -> int:
         return fail("build first (sh tools/build-all.sh); missing " + ", ".join(missing))
     commit = subprocess.run(["git", "-C", str(ROOT), "describe", "--always", "--dirty"],
                             capture_output=True, text=True).stdout.strip() or "unknown"
+    version = args.version or subprocess.run(
+        ["git", "-C", str(ROOT), "describe", "--tags", "--always", "--dirty"],
+        capture_output=True, text=True).stdout.strip() or commit
     out = pathlib.Path(args.out or f"sw2-sdk-host-{commit}.tar.gz").resolve()
 
     def keep(info):
@@ -267,12 +271,13 @@ def cmd_host_bundle(args) -> int:
 
     with tarfile.open(out, "w:gz") as tar:
         tar.add(ROOT, arcname="sw2-sdk", filter=keep)
-        stamp = json.dumps({"commit": commit}, indent=2).encode()
+        stamp = json.dumps({"version": version, "commit": commit}, indent=2).encode()
         info = tarfile.TarInfo("sw2-sdk/BUNDLE.json")
         info.size = len(stamp)
         import io
         tar.addfile(info, io.BytesIO(stamp))
     digest = hashlib.sha256(out.read_bytes()).hexdigest()
+    pathlib.Path(str(out) + ".sha256").write_text(f"{digest}  {out.name}\n")
     print(f"{out}\nsha256 {digest}\nunpack and run: tar xzf {out.name} && sw2-sdk/sw2 run --run <held-run-folder>")
     return 0
 
@@ -305,6 +310,7 @@ def main() -> int:
     sub.add_parser("doctor").set_defaults(fn=cmd_doctor)
     p = sub.add_parser("host-bundle")
     p.add_argument("--out")
+    p.add_argument("--version", help="version recorded in BUNDLE.json (default: git describe)")
     p.set_defaults(fn=cmd_host_bundle)
     p = sub.add_parser("new")
     p.add_argument("dir"); p.add_argument("name")

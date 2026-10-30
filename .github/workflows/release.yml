@@ -1,0 +1,60 @@
+name: release
+# Push a tag like v0.1.0 to publish the prebuilt SDK:
+#   sw2-sdk.tar.gz (+ .sha256)  launcher, GPUBrew runner, demo apps, host, tools
+#   install.sh                  curl ... | sh installer for Linux and macOS
+# Stable asset names keep releases/latest/download/<name> working.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag: {description: 'existing tag to (re)publish', required: true}
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+      # GNU is the toolchain that has run on hardware so far.
+      SW2_TOOLCHAIN: gnu
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: '${{ inputs.tag || github.ref }}'}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22}
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pil gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu \
+            glslang-tools spirv-tools fonts-dejavu-core qemu-user libvulkan1 mesa-vulkan-drivers
+      - run: sh tools/build-all.sh
+      - run: sh tests/run.sh
+      - name: Bundle
+        run: |
+          mkdir -p dist
+          ./sw2 host-bundle --out dist/sw2-sdk.tar.gz --version "$TAG"
+          cp tools/install.sh dist/install.sh
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          notes=$(cat <<NOTES
+          Prebuilt sw2-sdk $TAG: launcher, GPUBrew runner, demo apps, host runtime and tools.
+
+          Install (Linux or macOS):
+
+              curl -fsSL https://github.com/${{ github.repository }}/releases/download/$TAG/install.sh | SW2_VERSION=$TAG sh
+
+          Then run \`sw2 doctor\` for your platform's build toolchain. Apps are built with
+          \`sw2 build\`; running on a console needs a verified 4/4 session (docs/SW2.md).
+
+          sha256 (sw2-sdk.tar.gz): $(cut -d' ' -f1 dist/sw2-sdk.tar.gz.sha256)
+          NOTES
+          )
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/* --clobber
+          else
+            gh release create "$TAG" dist/* --title "sw2-sdk $TAG" --notes "$notes"
+          fi

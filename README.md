@@ -10,6 +10,19 @@ A Switch 2 homebrew SDK built on [HBLauncher](https://github.com/ravensclawx) by
 - a package manager and desktop store for the
   [sw2-homebrew-catalog](https://github.com/sw2-homebrew-dev/sw2-homebrew-catalog)
 
+## Install
+
+Prebuilt release (Linux or macOS):
+
+```sh
+curl -fsSL https://github.com/sw2-homebrew-dev/sw2-sdk/releases/latest/download/install.sh | sh
+sw2 doctor        # shows what your OS needs to build apps
+```
+
+This installs to `~/.local/share/sw2-sdk` and links `sw2` into
+`~/.local/bin`. It checks the download's sha256 first. To build from
+source instead, clone this repository and run `sh tools/build-all.sh`.
+
 Read [docs/SW2.md](docs/SW2.md) for these additions. The upstream README follows.
 
 ---
