@@ -174,6 +174,12 @@ test('pkgmgr rejects a tampered artifact', async () => {
   assert(!fs.existsSync(path.join(root, 'apps/zipped')));
 });
 
+test('unzip keeps empty deflated files (native build/data.bin)', () => {
+  const files = pkgmgr.unzip(zip({'app/manifest.json': '{}', 'app/build/data.bin': ''}));
+  const empty = files.find(f => f.name === 'app/build/data.bin');
+  assert(empty && empty.bytes.length === 0);
+});
+
 test('unzip refuses path traversal', () => {
   assert.throws(() => pkgmgr.unzip(zip({'../evil': 'x'})), /unsafe path/);
 });

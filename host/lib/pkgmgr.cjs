@@ -163,7 +163,9 @@ function unzip(buffer) {
     if (total > MAX_ARTIFACT) throw new PkgError('zip expands beyond the size limit', 'integrity');
     let bytes;
     if (method === 0) bytes = Buffer.from(raw);
-    else if (method === 8) bytes = zlib.inflateRawSync(raw, {maxOutputLength: size});
+    /* zlib rejects maxOutputLength 0, and empty files (an app's empty
+       build/data.bin) are common. */
+    else if (method === 8) bytes = size ? zlib.inflateRawSync(raw, {maxOutputLength: size}) : Buffer.alloc(0);
     else throw new PkgError(`unsupported zip method ${method} for ${name}`, 'integrity');
     if (bytes.length !== size) throw new PkgError(`size mismatch for ${name}`, 'integrity');
     files.push({name, bytes});
